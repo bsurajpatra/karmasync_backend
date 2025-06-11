@@ -15,12 +15,20 @@ const uri = process.env.MONGODB_URI;
 mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  useCreateIndex: true
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true,
+  retryWrites: true,
+  w: 'majority'
 });
 
 const connection = mongoose.connection;
 connection.once("open", () => {
   console.log("MongoDB database connection established successfully");
+});
+
+connection.on("error", (err) => {
+  console.error("MongoDB connection error:", err);
 });
 
 // Import routes
