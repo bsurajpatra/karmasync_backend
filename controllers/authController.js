@@ -439,7 +439,7 @@ exports.updateProfile = async (req, res) => {
     console.log('updateProfile - Request body:', req.body);
     console.log('updateProfile - User from request:', req.user);
     
-    const { fullName, currentPassword, newPassword } = req.body;
+    const { fullName, username, email, currentPassword, newPassword } = req.body;
     const userId = req.user.userId || req.user.id;
     console.log('updateProfile - User ID:', userId);
 
@@ -456,10 +456,40 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update full name if provided
-    if (fullName) {
-      console.log('updateProfile - Updating full name to:', fullName);
+    // Track if any changes were made
+    let isModified = false;
+
+    // Check if username is being changed and if it's already taken
+    if (username && username !== user.username) {
+      console.log('updateProfile - Checking username:', username);
+      const existingUser = await User.findOne({ username, _id: { $ne: userId } });
+      if (existingUser) {
+        console.log('updateProfile - Username already taken:', username);
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+      console.log('updateProfile - Updating username from', user.username, 'to', username);
+      user.username = username;
+      isModified = true;
+    }
+
+    // Check if email is being changed and if it's already registered
+    if (email && email !== user.email) {
+      console.log('updateProfile - Checking email:', email);
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        console.log('updateProfile - Email already registered:', email);
+        return res.status(400).json({ message: 'Email is already registered' });
+      }
+      console.log('updateProfile - Updating email from', user.email, 'to', email);
+      user.email = email;
+      isModified = true;
+    }
+
+    // Update full name if provided and different
+    if (fullName && fullName !== user.fullName) {
+      console.log('updateProfile - Updating full name from', user.fullName, 'to', fullName);
       user.fullName = fullName;
+      isModified = true;
     }
 
     // Update password if provided
@@ -480,13 +510,20 @@ exports.updateProfile = async (req, res) => {
 
       console.log('updateProfile - Updating password');
       user.password = newPassword;
+      isModified = true;
     }
 
-    await user.save();
-    console.log('updateProfile - User saved successfully');
+    // Only save if changes were made
+    if (isModified) {
+      console.log('updateProfile - Saving changes to database');
+      await user.save();
+      console.log('updateProfile - User saved successfully');
+    } else {
+      console.log('updateProfile - No changes detected');
+    }
 
     res.json({
-      message: 'Profile updated successfully',
+      message: isModified ? 'Profile updated successfully' : 'No changes made',
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -504,6 +541,7 @@ exports.updateProfile = async (req, res) => {
 // Delete user account
 exports.deleteAccount = async (req, res) => {
   try {
+    console.log('deleteAccount - Request received');
     const userId = req.user.userId || req.user.id;
     console.log('deleteAccount - User ID:', userId);
 
@@ -513,13 +551,14 @@ exports.deleteAccount = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Delete the user
     await User.findByIdAndDelete(userId);
-    console.log('deleteAccount - User deleted successfully');
+    console.log('deleteAccount - User deleted successfully:', userId);
 
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
-    console.error('Account deletion error:', error);
-    console.error('Account deletion error stack:', error.stack);
+    console.error('deleteAccount - Error:', error);
+    console.error('deleteAccount - Error stack:', error.stack);
     res.status(500).json({ message: 'Error deleting account' });
   }
 }; 
