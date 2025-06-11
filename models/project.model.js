@@ -33,9 +33,9 @@ const projectSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'completed', 'archived'],
     default: 'active'
-  }
+    }
 }, {
-  timestamps: true
+    timestamps: true
 });
 
 // Add indexes for faster queries
@@ -44,4 +44,4 @@ projectSchema.index({ 'collaborators.userId': 1 });
 
 const Project = mongoose.model('Project', projectSchema);
 
-module.exports = Project; 
+module.exports = Project;

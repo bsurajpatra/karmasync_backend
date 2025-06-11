@@ -567,4 +567,172 @@ exports.resetPassword = async (req, res) => {
       message: error.message || 'Error resetting password'
     });
   }
+};
+
+exports.register = async (req, res) => {
+  try {
+    const { fullName, username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create new user
+    const user = new User({
+      fullName,
+      username,
+      email,
+      password
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'Registration successful',
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Error registering user' });
+  }
+};
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    console.log('getCurrentUser - Request headers:', req.headers);
+    console.log('getCurrentUser - User from request:', req.user);
+    
+    const userId = req.user.userId || req.user.id;
+    console.log('getCurrentUser - User ID:', userId);
+    
+    const user = await User.findById(userId).select('-password');
+    console.log('getCurrentUser - Found user:', user ? {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName
+    } : 'No user found');
+
+    if (!user) {
+      console.log('getCurrentUser - No user found for ID:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      id: user._id,
+      fullName: user.fullName,
+      username: user.username,
+      email: user.email
+    });
+  } catch (error) {
+    console.error('getCurrentUser - Error:', error);
+    console.error('getCurrentUser - Error stack:', error.stack);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+};
+
+// Update user profile
+exports.updateProfile = async (req, res) => {
+  try {
+    console.log('updateProfile - Request body:', req.body);
+    console.log('updateProfile - User from request:', req.user);
+    
+    const { fullName, currentPassword, newPassword } = req.body;
+    const userId = req.user.userId || req.user.id;
+    console.log('updateProfile - User ID:', userId);
+
+    const user = await User.findById(userId);
+    console.log('updateProfile - Found user:', user ? {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName
+    } : 'No user found');
+
+    if (!user) {
+      console.log('updateProfile - No user found for ID:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update full name if provided
+    if (fullName) {
+      console.log('updateProfile - Updating full name to:', fullName);
+      user.fullName = fullName;
+    }
+
+    // Update password if provided
+    if (newPassword) {
+      console.log('updateProfile - Password update requested');
+      if (!currentPassword) {
+        console.log('updateProfile - Current password not provided');
+        return res.status(400).json({ message: 'Current password is required to set a new password' });
+      }
+
+      const isMatch = await user.comparePassword(currentPassword);
+      console.log('updateProfile - Password match result:', isMatch);
+      
+      if (!isMatch) {
+        console.log('updateProfile - Current password is incorrect');
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      console.log('updateProfile - Updating password');
+      user.password = newPassword;
+    }
+
+    await user.save();
+    console.log('updateProfile - User saved successfully');
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('updateProfile - Error:', error);
+    console.error('updateProfile - Error stack:', error.stack);
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+};
+
+// Delete user account
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    console.log('deleteAccount - User ID:', userId);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log('deleteAccount - No user found for ID:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.findByIdAndDelete(userId);
+    console.log('deleteAccount - User deleted successfully');
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    console.error('Account deletion error stack:', error.stack);
+    res.status(500).json({ message: 'Error deleting account' });
+  }
 }; 

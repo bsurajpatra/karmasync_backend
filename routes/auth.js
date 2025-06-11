@@ -2,6 +2,7 @@ const router = require('express').Router();
 const authController = require('../controllers/authController');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const auth = require('../middleware/auth');
 
 // Signup route
 router.post('/signup', authController.signup);
@@ -126,5 +127,12 @@ router.post('/send-welcome-email', async (req, res) => {
     res.status(500).json({ message: 'Error sending welcome email' });
   }
 });
+
+// Get current user route
+router.get('/me', auth, authController.getCurrentUser);
+
+// Profile management routes
+router.put('/profile', auth, authController.updateProfile);
+router.delete('/profile', auth, authController.deleteAccount);
 
 module.exports = router; 
