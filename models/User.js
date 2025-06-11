@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: [3, 'Username must be at least 3 characters long'],
-    maxlength: [20, 'Username cannot exceed 20 characters'],
+    maxlength: [20, 'Username cannot be more than 20 characters'],
     match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens']
   },
   email: {
@@ -41,6 +41,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 // Hash password before saving
@@ -58,7 +60,11 @@ userSchema.pre('save', async function(next) {
 
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw error;
+  }
 };
 
 const User = mongoose.model('User', userSchema);
