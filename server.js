@@ -54,7 +54,7 @@ const projectsRouter = require("./routes/projects");
 // Use routes
 console.log('Registering routes...');
 app.use("/api/auth", authRouter);
-app.use("/api/tasks", tasksRouter);
+app.use("/api", tasksRouter);
 app.use("/api/projects", projectsRouter);
 
 // Log registered routes

@@ -1,64 +1,24 @@
-const router = require("express").Router();
-const Task = require("../models/task.model");
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const taskController = require('../controllers/taskController');
 
-router.route("/").get((req, res) => {
-  Task.find()
-    .sort({ date: -1 })
-    .then(tasks => res.json(tasks))
-    .catch(err => res.status(400).json("Error: " + err));
-});
+// Get all tasks for a project
+router.get('/projects/:projectId/tasks', auth, taskController.getTasksByProject);
 
-router.route("/add").post((req, res) => {
-  //TODO sanitization and validation
-  const projectname = req.body.projectname;
-  const description = req.body.description;
-  const duration = Number(req.body.duration);
-  const date = Date.parse(req.body.date);
+// Create a new task
+router.post('/tasks', auth, taskController.createTask);
 
-  const newTask = new Task({
-    projectname,
-    description,
-    duration,
-    date
-  });
+// Update task status
+router.patch('/tasks/:id', auth, taskController.updateTaskStatus);
 
-  newTask
-    .save()
-    .then(() => res.json("Task Added!"))
-    .catch(err => res.status(400).json("Error: " + err));
-});
+// Update task details
+router.put('/tasks/:id', auth, taskController.updateTask);
 
-router.route("/:id").get((req, res) => {
-  Task.findById(req.params.id)
-    .then(taskDetails => res.json(taskDetails))
-    .catch(err => {
-      res.status(400).json("Error: " + err);
-    });
-});
+// Delete task
+router.delete('/tasks/:id', auth, taskController.deleteTask);
 
-router.route("/:id").delete((req, res) => {
-  Task.findByIdAndDelete(req.params.id)
-    .then(() => res.json("Task Deleted"))
-    .catch(err => {
-      res.status(400).json("Error: " + err);
-    });
-});
-
-router.route("/update/:id").post((req, res) => {
-  Task.findById(req.params.id)
-    .then(task => {
-      task.projectname = req.body.projectname;
-      task.description = req.body.description;
-      task.duration = Number(req.body.duration);
-      task.date = Date.parse(req.body.date);
-      task
-        .save()
-        .then(() => res.json("Task updated"))
-        .catch(err => res.status(400).json("Error: " + err));
-    })
-    .catch(err => {
-      res.status(400).json("Error: " + err);
-    });
-});
+// Add comment to task
+router.post('/tasks/:id/comments', auth, taskController.addComment);
 
 module.exports = router;

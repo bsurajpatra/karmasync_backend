@@ -1,29 +1,50 @@
-const Project = require('../models/Project');
+const Project = require('../models/project.model');
 
 // Create a new project
 exports.createProject = async (req, res) => {
   try {
-    const { title, description } = req.body;
-    const userId = req.user.id;
+    console.log('Creating project with data:', req.body);
+    const { title, description, githubLink, projectType } = req.body;
+    const userId = req.user.userId || req.user._id;
+
+    if (!title) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
 
     const project = new Project({
       title,
       description,
+      githubLink,
+      projectType: projectType || 'personal',
       createdBy: userId,
       collaborators: [{
         userId,
-        role: 'project-manager'
-      }]
+        role: 'admin'
+      }],
+      status: 'active'
     });
 
-    await project.save();
+    console.log('Project object created:', project);
+    const savedProject = await project.save();
+    console.log('Project saved successfully:', savedProject);
 
-    res.status(201).json({
-      message: 'Project created successfully',
-      project
-    });
+    await savedProject.populate('createdBy', 'fullName username');
+    await savedProject.populate('collaborators.userId', 'fullName username');
+
+    res.status(201).json(savedProject);
   } catch (error) {
     console.error('Create project error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        details: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: 'You already have a project with this title'
+      });
+    }
     res.status(500).json({
       message: error.message || 'Error creating project'
     });
