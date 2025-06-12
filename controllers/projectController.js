@@ -164,8 +164,10 @@ exports.deleteProject = async (req, res) => {
 
     const project = await Project.findOne({
       _id: id,
-      'collaborators.userId': userId,
-      'collaborators.role': 'project-manager'
+      $or: [
+        { createdBy: userId },
+        { 'collaborators.userId': userId, 'collaborators.role': 'admin' }
+      ]
     });
 
     if (!project) {
