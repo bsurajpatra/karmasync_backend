@@ -110,13 +110,15 @@ exports.getProjectById = async (req, res) => {
 exports.updateProject = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const { title, description } = req.body;
+    const userId = req.user.id || req.user._id;
+    const { title, description, githubLink } = req.body;
 
     const project = await Project.findOne({
       _id: id,
-      'collaborators.userId': userId,
-      'collaborators.role': 'project-manager'
+      $or: [
+        { createdBy: userId },
+        { 'collaborators.userId': userId, 'collaborators.role': { $in: ['admin', 'editor'] } }
+      ]
     });
 
     if (!project) {
@@ -126,17 +128,28 @@ exports.updateProject = async (req, res) => {
     }
 
     // Update fields
-    if (title) project.title = title;
-    if (description) project.description = description;
+    if (title !== undefined) project.title = title;
+    if (description !== undefined) project.description = description;
+    if (githubLink !== undefined) project.githubLink = githubLink;
 
     await project.save();
+    await project.populate('createdBy', 'fullName username');
+    await project.populate('collaborators.userId', 'fullName username');
 
-    res.json({
-      message: 'Project updated successfully',
-      project
-    });
+    res.json(project);
   } catch (error) {
     console.error('Update project error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        details: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
+      return res.status(400).json({
+        message: 'Invalid project ID format'
+      });
+    }
     res.status(500).json({
       message: error.message || 'Error updating project'
     });
