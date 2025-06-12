@@ -17,12 +17,12 @@ const taskSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['todo', 'doing', 'done'],
+      required: true,
       default: 'todo'
     },
     type: {
       type: String,
-      enum: ['tech', 'design'],
+      enum: ['tech', 'review', 'bug', 'feature', 'documentation'],
       required: true
     },
     deadline: {

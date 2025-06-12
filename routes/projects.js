@@ -18,4 +18,9 @@ router.put('/:id', auth, projectController.updateProject);
 // Delete a project
 router.delete('/:id', auth, projectController.deleteProject);
 
+// Custom board management
+router.post('/:id/boards', auth, projectController.addCustomBoard);
+router.put('/:id/boards/:boardId', auth, projectController.updateCustomBoard);
+router.delete('/:id/boards/:boardId', auth, projectController.deleteCustomBoard);
+
 module.exports = router; 

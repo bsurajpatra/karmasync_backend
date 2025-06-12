@@ -44,6 +44,16 @@ const projectSchema = new mongoose.Schema({
       default: 'viewer'
     }
   }],
+  customBoards: [{
+    id: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
+  }],
   status: {
     type: String,
     enum: ['active', 'completed', 'archived'],
