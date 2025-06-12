@@ -22,8 +22,15 @@ const taskSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ['tech', 'review', 'bug', 'feature', 'documentation'],
-      required: true
+      required: true,
+      validate: {
+        validator: function(v) {
+          const predefinedTypes = ['tech', 'review', 'bug', 'feature', 'documentation'];
+          // Allow predefined types or custom types that are alphanumeric with hyphens and underscores
+          return predefinedTypes.includes(v) || /^[a-zA-Z0-9-_]+$/.test(v);
+        },
+        message: 'Invalid task type. Must be one of the predefined types or contain only letters, numbers, hyphens, and underscores.'
+      }
     },
     deadline: {
       type: Date,
