@@ -64,7 +64,7 @@ exports.createTask = async (req, res) => {
       deadline,
       projectId,
       assignee: userId,
-      status: 'todo'
+      status: req.body.status
     });
 
     const savedTask = await task.save();
