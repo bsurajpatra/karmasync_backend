@@ -4,6 +4,11 @@ const Schema = mongoose.Schema;
 
 const taskSchema = new Schema(
   {
+    serialNumber: {
+      type: Number,
+      required: true,
+      default: 0
+    },
     title: {
       type: String,
       required: [true, 'Task title is required'],
@@ -36,7 +41,14 @@ const taskSchema = new Schema(
       type: Date,
       validate: {
         validator: function(v) {
-          return !v || v > new Date();
+          // If no deadline is set, it's valid
+          if (!v) return true;
+          // Check if the date is in the future
+          const now = new Date();
+          now.setHours(0, 0, 0, 0); // Reset time part to compare dates only
+          const deadline = new Date(v);
+          deadline.setHours(0, 0, 0, 0);
+          return deadline >= now;
         },
         message: 'Deadline must be a future date'
       }
@@ -78,6 +90,27 @@ const taskSchema = new Schema(
 taskSchema.index({ projectId: 1, status: 1 });
 taskSchema.index({ assignee: 1 });
 taskSchema.index({ deadline: 1 });
+
+// Generate serial number before saving
+taskSchema.pre('save', async function(next) {
+  if (!this.isNew) return next();
+  
+  try {
+    // Find the highest serial number for this project
+    const highestTask = await this.constructor.findOne(
+      { projectId: this.projectId },
+      { serialNumber: 1 },
+      { sort: { serialNumber: -1 } }
+    );
+    
+    // Set the new serial number
+    this.serialNumber = highestTask ? highestTask.serialNumber + 1 : 1;
+    next();
+  } catch (error) {
+    console.error('Error generating serial number:', error);
+    next(error);
+  }
+});
 
 const Task = mongoose.model("Task", taskSchema);
 

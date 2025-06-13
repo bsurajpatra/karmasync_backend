@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const projectSchema = new mongoose.Schema({
+  shortId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   title: {
     type: String,
     required: [true, 'Project title is required'],
@@ -84,6 +90,22 @@ projectSchema.statics.initializeIndexes = async function() {
     // Don't throw the error as it might prevent the application from starting
   }
 };
+
+// Generate short ID before saving
+projectSchema.pre('save', async function(next) {
+  if (!this.isNew) return next();
+  
+  try {
+    // Generate a short hash using bcrypt
+    const salt = await bcrypt.genSalt(4); // Using a smaller salt for shorter hash
+    const hash = await bcrypt.hash(Date.now().toString(), salt);
+    // Take first 8 characters and remove any non-alphanumeric characters
+    this.shortId = hash.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const Project = mongoose.model('Project', projectSchema);
 

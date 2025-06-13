@@ -62,6 +62,7 @@ exports.getProjects = async (req, res) => {
         { 'collaborators.userId': userId }
       ]
     })
+    .select('+shortId')
     .populate('createdBy', 'fullName username')
     .populate('collaborators.userId', 'fullName username')
     .sort({ createdAt: -1 });
@@ -88,6 +89,7 @@ exports.getProjectById = async (req, res) => {
         { 'collaborators.userId': userId }
       ]
     })
+    .select('+shortId')
     .populate('createdBy', 'fullName username')
     .populate('collaborators.userId', 'fullName username');
 

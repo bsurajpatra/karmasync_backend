@@ -220,8 +220,10 @@ exports.addComment = async (req, res) => {
     const { text } = req.body;
     const userId = req.user.userId || req.user._id;
 
-    const task = await Task.findById(id)
-      .populate('projectId', 'createdBy collaborators');
+    let task = await Task.findById(id)
+      .populate('projectId', 'createdBy collaborators')
+      .populate('assignee', 'fullName username')
+      .populate('comments.user', 'fullName username');
 
     if (!task) {
       return res.status(404).json({
@@ -245,9 +247,14 @@ exports.addComment = async (req, res) => {
     });
 
     await task.save();
-    await task.populate('comments.user', 'fullName username');
 
-    res.json(task.comments[task.comments.length - 1]);
+    // Fetch the updated task with all populated fields
+    task = await Task.findById(id)
+      .populate('projectId', 'createdBy collaborators')
+      .populate('assignee', 'fullName username')
+      .populate('comments.user', 'fullName username');
+
+    res.json(task);
   } catch (error) {
     console.error('Add comment error:', error);
     if (error.name === 'ValidationError') {
