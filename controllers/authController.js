@@ -426,6 +426,22 @@ exports.verifyOTP = async (req, res) => {
     user.clearOTP();
     await user.save();
 
+    // Send welcome email
+    try {
+      console.log('Sending welcome email to:', email);
+      const welcomeEmail = emailTemplates.welcome(user);
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: welcomeEmail.subject,
+        html: welcomeEmail.html
+      });
+      console.log('Welcome email sent successfully to:', email);
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // Don't throw error, continue with verification success
+    }
+
     res.json({ message: 'Email verified successfully' });
   } catch (error) {
     console.error('OTP verification error:', error);
