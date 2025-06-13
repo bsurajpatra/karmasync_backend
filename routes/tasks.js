@@ -6,6 +6,9 @@ const taskController = require('../controllers/taskController');
 // Get all tasks for a project
 router.get('/projects/:projectId/tasks', auth, taskController.getTasksByProject);
 
+// Get a single task by ID
+router.get('/tasks/:id', auth, taskController.getTaskById);
+
 // Create a new task
 router.post('/tasks', auth, taskController.createTask);
 

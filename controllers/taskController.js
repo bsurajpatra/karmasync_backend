@@ -260,4 +260,40 @@ exports.addComment = async (req, res) => {
       message: error.message || 'Error adding comment'
     });
   }
+};
+
+// Get a single task by ID
+exports.getTaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId || req.user._id;
+
+    const task = await Task.findById(id)
+      .populate('projectId', 'createdBy collaborators')
+      .populate('assignee', 'fullName username')
+      .populate('comments.user', 'fullName username');
+
+    if (!task) {
+      return res.status(404).json({
+        message: 'Task not found'
+      });
+    }
+
+    // Check if user has access to the project
+    const hasAccess = task.projectId.createdBy.equals(userId) ||
+      task.projectId.collaborators.some(c => c.userId.equals(userId));
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        message: 'You do not have permission to view this task'
+      });
+    }
+
+    res.json(task);
+  } catch (error) {
+    console.error('Get task error:', error);
+    res.status(500).json({
+      message: error.message || 'Error fetching task'
+    });
+  }
 }; 
