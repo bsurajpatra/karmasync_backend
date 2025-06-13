@@ -192,6 +192,70 @@ const emailTemplates = {
   })
 };
 
+// Check username availability
+exports.checkUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+    console.log('Checking username availability:', username);
+
+    if (!username || username.length < 3) {
+      return res.status(400).json({ 
+        available: false,
+        message: 'Username must be at least 3 characters long'
+      });
+    }
+
+    if (username.length > 20) {
+      return res.status(400).json({
+        available: false,
+        message: 'Username cannot be more than 20 characters'
+      });
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.status(400).json({
+        available: false,
+        message: 'Username can only contain letters, numbers, underscores, and hyphens'
+      });
+    }
+
+    const existingUser = await User.findOne({ username: username });
+    
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'Username is already taken' : 'Username is available'
+    });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    res.status(500).json({ message: 'Server error while checking username' });
+  }
+};
+
+// Check email availability
+exports.checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('Checking email availability:', email);
+
+    if (!email || !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+      return res.status(400).json({
+        available: false,
+        message: 'Please enter a valid email address'
+      });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'Email is already registered' : 'Email is available'
+    });
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ message: 'Server error while checking email' });
+  }
+};
+
 exports.signup = async (req, res) => {
   try {
     const { fullName, username, email, password } = req.body;
@@ -217,38 +281,114 @@ exports.signup = async (req, res) => {
       username,
       email,
       password,
-      isVerified: true
+      isVerified: false
     });
+
+    // Generate OTP
+    const otp = user.generateOTP();
 
     await user.save();
     console.log('New user created:', { id: user._id, email: user.email });
 
-    // Send welcome email
+    // Send OTP email
     try {
-      console.log('Preparing welcome email for:', email);
-      const welcomeEmail = emailTemplates.welcome(user);
+      console.log('Sending OTP email to:', email);
+      const otpEmail = {
+        subject: 'Verify Your Email - KarmaSync',
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                }
+                .header {
+                  text-align: center;
+                  padding: 20px 0;
+                  background: linear-gradient(135deg, #754ea7, #a770ef);
+                  border-radius: 10px 10px 0 0;
+                }
+                .header h1 {
+                  color: white;
+                  margin: 0;
+                  font-size: 24px;
+                }
+                .content {
+                  background: #ffffff;
+                  padding: 30px;
+                  border-radius: 0 0 10px 10px;
+                  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }
+                .otp-code {
+                  font-size: 32px;
+                  font-weight: bold;
+                  text-align: center;
+                  letter-spacing: 5px;
+                  color: #a770ef;
+                  margin: 20px 0;
+                }
+                .warning {
+                  background: #fff3cd;
+                  border: 1px solid #ffeeba;
+                  color: #856404;
+                  padding: 15px;
+                  border-radius: 5px;
+                  margin: 20px 0;
+                }
+                .footer {
+                  text-align: center;
+                  margin-top: 30px;
+                  color: #666;
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Verify Your Email</h1>
+              </div>
+              <div class="content">
+                <h2>Hello ${user.fullName},</h2>
+                <p>Welcome to KarmaSync! To complete your registration, please use the following verification code:</p>
+                <div class="otp-code">${otp}</div>
+                <div class="warning">
+                  <p><strong>Important:</strong></p>
+                  <ul>
+                    <li>This code will expire in 5 minutes</li>
+                    <li>If you didn't request this verification, please ignore this email</li>
+                    <li>Do not share this code with anyone</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Best regards,<br>The KarmaSync Team</p>
+                <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
+              </div>
+            </body>
+          </html>
+        `
+      };
+
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
-        subject: welcomeEmail.subject,
-        html: welcomeEmail.html
+        subject: otpEmail.subject,
+        html: otpEmail.html
       });
-      console.log('Welcome email sent successfully to:', email);
+      console.log('OTP email sent successfully to:', email);
     } catch (emailError) {
-      console.error('Error sending welcome email:', emailError);
+      console.error('Error sending OTP email:', emailError);
       // Don't throw error, continue with signup
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     res.status(201).json({
-      message: 'Account created successfully!',
-      token,
+      message: 'Account created successfully! Please check your email for verification code.',
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -260,6 +400,159 @@ exports.signup = async (req, res) => {
     console.error('Signup error:', error);
     res.status(500).json({ 
       message: error.message || 'Error creating user'
+    });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    if (!user.verifyOTP(otp)) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Mark user as verified and clear OTP
+    user.isVerified = true;
+    user.clearOTP();
+    await user.save();
+
+    res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error verifying OTP'
+    });
+  }
+};
+
+exports.resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    // Generate new OTP
+    const otp = user.generateOTP();
+    await user.save();
+
+    // Send new OTP email
+    try {
+      const otpEmail = {
+        subject: 'New Verification Code - KarmaSync',
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                }
+                .header {
+                  text-align: center;
+                  padding: 20px 0;
+                  background: linear-gradient(135deg, #754ea7, #a770ef);
+                  border-radius: 10px 10px 0 0;
+                }
+                .header h1 {
+                  color: white;
+                  margin: 0;
+                  font-size: 24px;
+                }
+                .content {
+                  background: #ffffff;
+                  padding: 30px;
+                  border-radius: 0 0 10px 10px;
+                  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }
+                .otp-code {
+                  font-size: 32px;
+                  font-weight: bold;
+                  text-align: center;
+                  letter-spacing: 5px;
+                  color: #a770ef;
+                  margin: 20px 0;
+                }
+                .warning {
+                  background: #fff3cd;
+                  border: 1px solid #ffeeba;
+                  color: #856404;
+                  padding: 15px;
+                  border-radius: 5px;
+                  margin: 20px 0;
+                }
+                .footer {
+                  text-align: center;
+                  margin-top: 30px;
+                  color: #666;
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>New Verification Code</h1>
+              </div>
+              <div class="content">
+                <h2>Hello ${user.fullName},</h2>
+                <p>Here's your new verification code for KarmaSync:</p>
+                <div class="otp-code">${otp}</div>
+                <div class="warning">
+                  <p><strong>Important:</strong></p>
+                  <ul>
+                    <li>This code will expire in 5 minutes</li>
+                    <li>If you didn't request this verification, please ignore this email</li>
+                    <li>Do not share this code with anyone</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Best regards,<br>The KarmaSync Team</p>
+                <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
+              </div>
+            </body>
+          </html>
+        `
+      };
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: otpEmail.subject,
+        html: otpEmail.html
+      });
+      console.log('New OTP email sent successfully to:', email);
+    } catch (emailError) {
+      console.error('Error sending new OTP email:', emailError);
+      throw new Error('Failed to send new verification code');
+    }
+
+    res.json({ message: 'New verification code sent successfully' });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error sending new verification code'
     });
   }
 };
@@ -560,24 +853,5 @@ exports.deleteAccount = async (req, res) => {
     console.error('deleteAccount - Error:', error);
     console.error('deleteAccount - Error stack:', error.stack);
     res.status(500).json({ message: 'Error deleting account' });
-  }
-};
-
-exports.checkUsername = async (req, res) => {
-  try {
-    const { username } = req.body;
-
-    // Check if username exists
-    const existingUser = await User.findOne({ username });
-    
-    res.json({
-      available: !existingUser,
-      message: existingUser ? 'Username is already taken' : 'Username is available'
-    });
-  } catch (error) {
-    console.error('Check username error:', error);
-    res.status(500).json({ 
-      message: error.message || 'Error checking username availability'
-    });
   }
 }; 

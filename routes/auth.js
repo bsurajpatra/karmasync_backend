@@ -4,7 +4,10 @@ const auth = require('../middleware/auth');
 
 // Auth routes
 router.post('/check-username', authController.checkUsername);
+router.post('/check-email', authController.checkEmail);
 router.post('/signup', authController.signup);
+router.post('/verify-otp', authController.verifyOTP);
+router.post('/resend-otp', authController.resendOTP);
 router.post('/login', authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password/:token', authController.resetPassword);
