@@ -2,7 +2,7 @@ const Task = require('../models/task.model');
 const Project = require('../models/project.model');
 
 // Get all tasks for a project
-exports.getTasksByProject = async (req, res) => {
+module.exports.getTasksByProject = async (req, res) => {
   try {
     const { projectId } = req.params;
     const userId = req.user.userId || req.user._id;
@@ -36,8 +36,44 @@ exports.getTasksByProject = async (req, res) => {
   }
 };
 
+// Get a single task by ID
+module.exports.getTaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId || req.user._id;
+
+    const task = await Task.findById(id)
+      .populate('projectId', 'createdBy collaborators')
+      .populate('assignee', 'fullName username')
+      .populate('comments.user', 'fullName username');
+
+    if (!task) {
+      return res.status(404).json({
+        message: 'Task not found'
+      });
+    }
+
+    // Check if user has access to the project
+    const hasAccess = task.projectId.createdBy.equals(userId) ||
+      task.projectId.collaborators.some(c => c.userId.equals(userId));
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        message: 'You do not have permission to view this task'
+      });
+    }
+
+    res.json(task);
+  } catch (error) {
+    console.error('Get task error:', error);
+    res.status(500).json({
+      message: error.message || 'Error fetching task'
+    });
+  }
+};
+
 // Create a new task
-exports.createTask = async (req, res) => {
+module.exports.createTask = async (req, res) => {
   try {
     const { title, description, type, deadline, projectId } = req.body;
     const userId = req.user.userId || req.user._id;
@@ -86,7 +122,7 @@ exports.createTask = async (req, res) => {
 };
 
 // Update task status
-exports.updateTaskStatus = async (req, res) => {
+module.exports.updateTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -124,7 +160,7 @@ exports.updateTaskStatus = async (req, res) => {
 };
 
 // Update task details
-exports.updateTask = async (req, res) => {
+module.exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -176,7 +212,7 @@ exports.updateTask = async (req, res) => {
 };
 
 // Delete task
-exports.deleteTask = async (req, res) => {
+module.exports.deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.userId || req.user._id;
@@ -214,7 +250,7 @@ exports.deleteTask = async (req, res) => {
 };
 
 // Add comment to task
-exports.addComment = async (req, res) => {
+module.exports.addComment = async (req, res) => {
   try {
     const { id } = req.params;
     const { text } = req.body;
@@ -269,38 +305,14 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Get a single task by ID
-exports.getTaskById = async (req, res) => {
+// Delete all tasks for a project
+module.exports.deleteTasksByProject = async (projectId) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.userId || req.user._id;
-
-    const task = await Task.findById(id)
-      .populate('projectId', 'createdBy collaborators')
-      .populate('assignee', 'fullName username')
-      .populate('comments.user', 'fullName username');
-
-    if (!task) {
-      return res.status(404).json({
-        message: 'Task not found'
-      });
-    }
-
-    // Check if user has access to the project
-    const hasAccess = task.projectId.createdBy.equals(userId) ||
-      task.projectId.collaborators.some(c => c.userId.equals(userId));
-
-    if (!hasAccess) {
-      return res.status(403).json({
-        message: 'You do not have permission to view this task'
-      });
-    }
-
-    res.json(task);
+    const result = await Task.deleteMany({ projectId });
+    console.log(`Deleted ${result.deletedCount} tasks for project ${projectId}`);
+    return result;
   } catch (error) {
-    console.error('Get task error:', error);
-    res.status(500).json({
-      message: error.message || 'Error fetching task'
-    });
+    console.error('Error deleting tasks:', error);
+    throw error;
   }
 }; 

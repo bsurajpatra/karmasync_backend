@@ -38,20 +38,7 @@ const taskSchema = new Schema(
       }
     },
     deadline: {
-      type: Date,
-      validate: {
-        validator: function(v) {
-          // If no deadline is set, it's valid
-          if (!v) return true;
-          // Check if the date is in the future
-          const now = new Date();
-          now.setHours(0, 0, 0, 0); // Reset time part to compare dates only
-          const deadline = new Date(v);
-          deadline.setHours(0, 0, 0, 0);
-          return deadline >= now;
-        },
-        message: 'Deadline must be a future date'
-      }
+      type: Date
     },
     projectId: {
       type: Schema.Types.ObjectId,

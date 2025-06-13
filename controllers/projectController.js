@@ -1,4 +1,5 @@
 const Project = require('../models/project.model');
+const { deleteTasksByProject } = require('./taskController');
 
 // Create a new project
 exports.createProject = async (req, res) => {
@@ -178,10 +179,14 @@ exports.deleteProject = async (req, res) => {
       });
     }
 
+    // Delete all tasks associated with the project
+    await deleteTasksByProject(id);
+
+    // Delete the project
     await project.deleteOne();
 
     res.json({
-      message: 'Project deleted successfully'
+      message: 'Project and associated tasks deleted successfully'
     });
   } catch (error) {
     console.error('Delete project error:', error);
