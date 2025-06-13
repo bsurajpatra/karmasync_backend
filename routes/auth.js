@@ -3,6 +3,7 @@ const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
 // Auth routes
+router.post('/check-username', authController.checkUsername);
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
 router.post('/forgot-password', authController.forgotPassword);

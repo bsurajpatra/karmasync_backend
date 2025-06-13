@@ -561,4 +561,23 @@ exports.deleteAccount = async (req, res) => {
     console.error('deleteAccount - Error stack:', error.stack);
     res.status(500).json({ message: 'Error deleting account' });
   }
+};
+
+exports.checkUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    // Check if username exists
+    const existingUser = await User.findOne({ username });
+    
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'Username is already taken' : 'Username is available'
+    });
+  } catch (error) {
+    console.error('Check username error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error checking username availability'
+    });
+  }
 }; 
