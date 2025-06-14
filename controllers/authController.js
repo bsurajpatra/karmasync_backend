@@ -192,6 +192,9 @@ const emailTemplates = {
   })
 };
 
+// Store temporary user data
+const tempUserData = new Map();
+
 // Check username availability
 exports.checkUsername = async (req, res) => {
   try {
@@ -259,7 +262,6 @@ exports.checkEmail = async (req, res) => {
 exports.signup = async (req, res) => {
   try {
     const { fullName, username, email, password } = req.body;
-    console.log('Signup request received for:', { fullName, username, email });
 
     // Check if user already exists
     const existingUser = await User.findOne({ 
@@ -267,140 +269,60 @@ exports.signup = async (req, res) => {
     });
 
     if (existingUser) {
-      console.log('User already exists:', existingUser.email === email ? 'email' : 'username');
       return res.status(400).json({ 
-        message: existingUser.email === email ? 
-          'Email already registered' : 
-          'Username already taken'
+        message: 'User with this email or username already exists' 
       });
     }
 
-    // Create new user
-    const user = new User({
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store user data temporarily with OTP
+    tempUserData.set(email, {
       fullName,
       username,
       email,
       password,
-      isVerified: false
+      otp,
+      otpExpiry
     });
 
-    // Generate OTP
-    const otp = user.generateOTP();
-
-    await user.save();
-    console.log('New user created:', { id: user._id, email: user.email });
-
     // Send OTP email
-    try {
-      console.log('Sending OTP email to:', email);
-      const otpEmail = {
-        subject: 'Verify Your Email - KarmaSync',
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #333;
-                  max-width: 600px;
-                  margin: 0 auto;
-                  padding: 20px;
-                }
-                .header {
-                  text-align: center;
-                  padding: 20px 0;
-                  background: linear-gradient(135deg, #754ea7, #a770ef);
-                  border-radius: 10px 10px 0 0;
-                }
-                .header h1 {
-                  color: white;
-                  margin: 0;
-                  font-size: 24px;
-                }
-                .content {
-                  background: #ffffff;
-                  padding: 30px;
-                  border-radius: 0 0 10px 10px;
-                  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                }
-                .otp-code {
-                  font-size: 32px;
-                  font-weight: bold;
-                  text-align: center;
-                  letter-spacing: 5px;
-                  color: #a770ef;
-                  margin: 20px 0;
-                }
-                .warning {
-                  background: #fff3cd;
-                  border: 1px solid #ffeeba;
-                  color: #856404;
-                  padding: 15px;
-                  border-radius: 5px;
-                  margin: 20px 0;
-                }
-                .footer {
-                  text-align: center;
-                  margin-top: 30px;
-                  color: #666;
-                  font-size: 14px;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <h1>Verify Your Email</h1>
-              </div>
-              <div class="content">
-                <h2>Hello ${user.fullName},</h2>
-                <p>Welcome to KarmaSync! To complete your registration, please use the following verification code:</p>
-                <div class="otp-code">${otp}</div>
-                <div class="warning">
-                  <p><strong>Important:</strong></p>
-                  <ul>
-                    <li>This code will expire in 5 minutes</li>
-                    <li>If you didn't request this verification, please ignore this email</li>
-                    <li>Do not share this code with anyone</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="footer">
-                <p>Best regards,<br>The KarmaSync Team</p>
-                <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
-              </div>
-            </body>
-          </html>
-        `
-      };
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verify Your Email - KarmaSync',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+          <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Welcome to KarmaSync!</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+            Thank you for signing up. To complete your registration, please use the following OTP to verify your email address:
+          </p>
+          <div style="background-color: #fff; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+            This OTP will expire in 5 minutes. If you didn't request this verification, please ignore this email.
+          </p>
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="color: #999; font-size: 12px;">
+              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+    };
 
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: otpEmail.subject,
-        html: otpEmail.html
-      });
-      console.log('OTP email sent successfully to:', email);
-    } catch (emailError) {
-      console.error('Error sending OTP email:', emailError);
-      // Don't throw error, continue with signup
-    }
+    await transporter.sendMail(mailOptions);
 
-    res.status(201).json({
-      message: 'Account created successfully! Please check your email for verification code.',
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        username: user.username,
-        email: user.email
-      }
+    res.status(200).json({ 
+      message: 'OTP sent successfully. Please check your email to verify your account.',
+      email
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ 
-      message: error.message || 'Error creating user'
-    });
+    res.status(500).json({ message: 'Error in signup process' });
   }
 };
 
@@ -408,46 +330,75 @@ exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Get temporary user data
+    const userData = tempUserData.get(email);
+
+    if (!userData) {
+      return res.status(400).json({ message: 'Invalid or expired OTP request' });
     }
 
-    if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
-    }
-
-    if (!user.verifyOTP(otp)) {
+    // Check if OTP is valid and not expired
+    if (userData.otp !== otp || userData.otpExpiry < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
-    // Mark user as verified and clear OTP
-    user.isVerified = true;
-    user.clearOTP();
-    await user.save();
+    // Create new user
+    const newUser = new User({
+      fullName: userData.fullName,
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      isVerified: true
+    });
+
+    await newUser.save();
+
+    // Clear temporary data
+    tempUserData.delete(email);
 
     // Send welcome email
-    try {
-      console.log('Sending welcome email to:', email);
-      const welcomeEmail = emailTemplates.welcome(user);
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: welcomeEmail.subject,
-        html: welcomeEmail.html
-      });
-      console.log('Welcome email sent successfully to:', email);
-    } catch (emailError) {
-      console.error('Error sending welcome email:', emailError);
-      // Don't throw error, continue with verification success
-    }
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Welcome to KarmaSync!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+          <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Welcome to KarmaSync!</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+            Thank you for verifying your email. Your account has been successfully created and is ready to use.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.CLIENT_URL}/login" 
+               style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Login to Your Account
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+            If you have any questions or need assistance, feel free to contact our support team.
+          </p>
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="color: #999; font-size: 12px;">
+              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+    };
 
-    res.json({ message: 'Email verified successfully' });
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ 
+      message: 'Email verified successfully. You can now login to your account.',
+      user: {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        username: newUser.username,
+        email: newUser.email
+      }
+    });
   } catch (error) {
     console.error('OTP verification error:', error);
-    res.status(500).json({ 
-      message: error.message || 'Error verifying OTP'
-    });
+    res.status(500).json({ message: 'Error in OTP verification process' });
   }
 };
 
@@ -455,121 +406,59 @@ exports.resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Get temporary user data
+    const userData = tempUserData.get(email);
 
-    if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
+    if (!userData) {
+      return res.status(400).json({ message: 'No pending verification found for this email' });
     }
 
     // Generate new OTP
-    const otp = user.generateOTP();
-    await user.save();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Update temporary data with new OTP
+    tempUserData.set(email, {
+      ...userData,
+      otp,
+      otpExpiry
+    });
 
     // Send new OTP email
-    try {
-      const otpEmail = {
-        subject: 'New Verification Code - KarmaSync',
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #333;
-                  max-width: 600px;
-                  margin: 0 auto;
-                  padding: 20px;
-                }
-                .header {
-                  text-align: center;
-                  padding: 20px 0;
-                  background: linear-gradient(135deg, #754ea7, #a770ef);
-                  border-radius: 10px 10px 0 0;
-                }
-                .header h1 {
-                  color: white;
-                  margin: 0;
-                  font-size: 24px;
-                }
-                .content {
-                  background: #ffffff;
-                  padding: 30px;
-                  border-radius: 0 0 10px 10px;
-                  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                }
-                .otp-code {
-                  font-size: 32px;
-                  font-weight: bold;
-                  text-align: center;
-                  letter-spacing: 5px;
-                  color: #a770ef;
-                  margin: 20px 0;
-                }
-                .warning {
-                  background: #fff3cd;
-                  border: 1px solid #ffeeba;
-                  color: #856404;
-                  padding: 15px;
-                  border-radius: 5px;
-                  margin: 20px 0;
-                }
-                .footer {
-                  text-align: center;
-                  margin-top: 30px;
-                  color: #666;
-                  font-size: 14px;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <h1>New Verification Code</h1>
-              </div>
-              <div class="content">
-                <h2>Hello ${user.fullName},</h2>
-                <p>Here's your new verification code for KarmaSync:</p>
-                <div class="otp-code">${otp}</div>
-                <div class="warning">
-                  <p><strong>Important:</strong></p>
-                  <ul>
-                    <li>This code will expire in 5 minutes</li>
-                    <li>If you didn't request this verification, please ignore this email</li>
-                    <li>Do not share this code with anyone</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="footer">
-                <p>Best regards,<br>The KarmaSync Team</p>
-                <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
-              </div>
-            </body>
-          </html>
-        `
-      };
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'New OTP for Email Verification - KarmaSync',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+          <h2 style="color: #333; text-align: center; margin-bottom: 20px;">New OTP for KarmaSync</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+            Here is your new OTP to verify your email address:
+          </p>
+          <div style="background-color: #fff; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+            This OTP will expire in 5 minutes. If you didn't request this verification, please ignore this email.
+          </p>
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="color: #999; font-size: 12px;">
+              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+    };
 
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: otpEmail.subject,
-        html: otpEmail.html
-      });
-      console.log('New OTP email sent successfully to:', email);
-    } catch (emailError) {
-      console.error('Error sending new OTP email:', emailError);
-      throw new Error('Failed to send new verification code');
-    }
+    await transporter.sendMail(mailOptions);
 
-    res.json({ message: 'New verification code sent successfully' });
+    res.status(200).json({ 
+      message: 'New OTP sent successfully. Please check your email.',
+      email
+    });
   } catch (error) {
     console.error('Resend OTP error:', error);
-    res.status(500).json({ 
-      message: error.message || 'Error sending new verification code'
-    });
+    res.status(500).json({ message: 'Error in resending OTP' });
   }
 };
 
