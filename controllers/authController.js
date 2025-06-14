@@ -41,68 +41,105 @@ const emailTemplates = {
         <head>
           <style>
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               line-height: 1.6;
-              color: #333;
+              color: #2c3e50;
               max-width: 600px;
               margin: 0 auto;
               padding: 20px;
+              background-color: #f0f2f5;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              overflow: hidden;
             }
             .header {
+              background: linear-gradient(135deg, #4a90e2, #7f53ac);
+              padding: 35px 20px;
               text-align: center;
-              padding: 20px 0;
-              background: linear-gradient(135deg, #754ea7, #a770ef);
-              border-radius: 10px 10px 0 0;
             }
             .header h1 {
-              color: white;
+              color: #ffffff;
               margin: 0;
-              font-size: 24px;
+              font-size: 28px;
+              font-weight: 600;
+              text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
             }
             .content {
-              background: #ffffff;
-              padding: 30px;
-              border-radius: 0 0 10px 10px;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+              padding: 35px;
+              background: linear-gradient(to bottom, #ffffff, #f8f9fa);
             }
-            .footer {
-              text-align: center;
-              margin-top: 30px;
-              color: #666;
-              font-size: 14px;
+            .welcome-text {
+              font-size: 18px;
+              color: #2c3e50;
+              margin-bottom: 25px;
+              font-weight: 500;
             }
             .feature-list {
-              margin: 20px 0;
-              padding-left: 20px;
+              background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+              border-radius: 10px;
+              padding: 25px;
+              margin: 25px 0;
+              border: 1px solid #e0e0e0;
+            }
+            .feature-list h3 {
+              color: #4a90e2;
+              margin-top: 0;
+              font-size: 20px;
             }
             .feature-list li {
-              margin-bottom: 10px;
+              margin-bottom: 15px;
+              color: #34495e;
+              padding-left: 5px;
+            }
+            .footer {
+              background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+              padding: 25px;
+              text-align: center;
+              border-top: 1px solid #e0e0e0;
+            }
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              background: linear-gradient(135deg, #4a90e2, #7f53ac);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              margin-bottom: 12px;
+            }
+            .copyright {
+              color: #6c757d;
+              font-size: 14px;
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Welcome to KarmaSync!</h1>
-          </div>
-          <div class="content">
-            <h2>Hello ${user.fullName},</h2>
-            <p>Welcome to KarmaSync - Your Collaborative Workspace for Smarter Project Management!</p>
-            <p>KarmaSync is a modern, lightweight project management tool built for teams and individuals to stay organized, productive, and in sync. Whether you're working solo or managing a group project, KarmaSync helps you plan tasks, track progress, and collaborate effectively — all in one streamlined dashboard.</p>
-            
-            <h3>🚀 Key Features</h3>
-            <ul class="feature-list">
-              <li>📁 Create and manage multiple projects</li>
-              <li>👥 Collaborate with team members via roles (Project Manager, Developer)</li>
-              <li>🗂️ Track tasks in a visual Kanban board (To Do, Doing, Done)</li>
-              <li>🧩 Assign tasks with deadlines, type (tech/design), and comments</li>
-              <li>📝 Maintain a personal daily to-do list for productivity</li>
-            </ul>
-            
-            <p>We're excited to have you on board! If you have any questions or need assistance, feel free to reach out to our support team.</p>
-          </div>
-          <div class="footer">
-            <p>Best regards,<br>The KarmaSync Team</p>
-            <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
+          <div class="container">
+            <div class="header">
+              <h1>Welcome to KarmaSync!</h1>
+            </div>
+            <div class="content">
+              <p class="welcome-text">Hello ${user.fullName},</p>
+              <p>Welcome to KarmaSync - Your Collaborative Workspace for Smarter Project Management!</p>
+              <p>KarmaSync is a modern, lightweight project management tool built for teams and individuals to stay organized, productive, and in sync.</p>
+              
+              <div class="feature-list">
+                <h3>🚀 Key Features</h3>
+                <ul style="list-style-type: none; padding-left: 0;">
+                  <li>📁 Create and manage multiple projects</li>
+                  <li>👥 Collaborate with team members via roles</li>
+                  <li>🗂️ Track tasks in a visual Kanban board</li>
+                  <li>🧩 Assign tasks with deadlines and comments</li>
+                  <li>📝 Maintain a personal daily to-do list</li>
+                </ul>
+              </div>
+              
+              <p>We're excited to have you on board! If you have any questions or need assistance, feel free to reach out to our support team.</p>
+            </div>
+            <div class="footer">
+              <div class="copyright">© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</div>
+            </div>
           </div>
         </body>
       </html>
@@ -116,75 +153,109 @@ const emailTemplates = {
         <head>
           <style>
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               line-height: 1.6;
-              color: #333;
+              color: #2c3e50;
               max-width: 600px;
               margin: 0 auto;
               padding: 20px;
+              background-color: #f0f2f5;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              overflow: hidden;
             }
             .header {
+              background: linear-gradient(135deg, #4a90e2, #7f53ac);
+              padding: 35px 20px;
               text-align: center;
-              padding: 20px 0;
-              background: linear-gradient(135deg, #754ea7, #a770ef);
-              border-radius: 10px 10px 0 0;
             }
             .header h1 {
-              color: white;
+              color: #ffffff;
               margin: 0;
-              font-size: 24px;
+              font-size: 28px;
+              font-weight: 600;
+              text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
             }
             .content {
-              background: #ffffff;
-              padding: 30px;
-              border-radius: 0 0 10px 10px;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+              padding: 35px;
+              background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+            }
+            .warning {
+              background: linear-gradient(135deg, #fff3cd, #ffeeba);
+              border: 1px solid #ffeeba;
+              color: #856404;
+              padding: 20px;
+              border-radius: 10px;
+              margin: 25px 0;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .warning ul {
+              margin: 15px 0;
+              padding-left: 20px;
             }
             .button {
               display: inline-block;
-              padding: 12px 24px;
-              background: linear-gradient(135deg, #754ea7, #a770ef);
+              padding: 14px 28px;
+              background: linear-gradient(135deg, #4a90e2, #7f53ac);
               color: white;
               text-decoration: none;
-              border-radius: 5px;
-              margin: 20px 0;
+              border-radius: 8px;
+              font-weight: 500;
+              margin: 25px 0;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              transition: transform 0.2s;
             }
-            .warning {
-              background: #fff3cd;
-              border: 1px solid #ffeeba;
-              color: #856404;
-              padding: 15px;
-              border-radius: 5px;
-              margin: 20px 0;
+            .button:hover {
+              transform: translateY(-1px);
             }
             .footer {
+              background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+              padding: 25px;
               text-align: center;
-              margin-top: 30px;
-              color: #666;
+              border-top: 1px solid #e0e0e0;
+            }
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              background: linear-gradient(135deg, #4a90e2, #7f53ac);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              margin-bottom: 12px;
+            }
+            .copyright {
+              color: #6c757d;
               font-size: 14px;
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Reset Your Password</h1>
-          </div>
-          <div class="content">
-            <h2>Hello ${user.fullName},</h2>
-            <p>We received a request to reset your password. Click the button below to create a new password:</p>
-            <a href="${resetUrl}" class="button">Reset Password</a>
-            <div class="warning">
-              <p><strong>Important:</strong></p>
-              <ul>
-                <li>This link will expire in 1 hour</li>
-                <li>If you didn't request this reset, please ignore this email</li>
-                <li>For security, never share this link with anyone</li>
-              </ul>
+          <div class="container">
+            <div class="header">
+              <h1>Reset Your Password</h1>
             </div>
-          </div>
-          <div class="footer">
-            <p>Best regards,<br>The KarmaSync Team</p>
-            <p>© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</p>
+            <div class="content">
+              <p>Hello ${user.fullName},</p>
+              <p>We received a request to reset your password. Click the button below to create a new password:</p>
+              
+              <div style="text-align: center;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+
+              <div class="warning">
+                <p><strong>Important:</strong></p>
+                <ul>
+                  <li>This link will expire in 1 hour</li>
+                  <li>If you didn't request this reset, please ignore this email</li>
+                  <li>For security, never share this link with anyone</li>
+                </ul>
+              </div>
+            </div>
+            <div class="footer">
+              <div class="copyright">© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</div>
+            </div>
           </div>
         </body>
       </html>
@@ -294,23 +365,102 @@ exports.signup = async (req, res) => {
       to: email,
       subject: 'Verify Your Email - KarmaSync',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
-          <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Welcome to KarmaSync!</h2>
-          <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-            Thank you for signing up. To complete your registration, please use the following OTP to verify your email address:
-          </p>
-          <div style="background-color: #fff; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
-            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
-          </div>
-          <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
-            This OTP will expire in 5 minutes. If you didn't request this verification, please ignore this email.
-          </p>
-          <div style="text-align: center; margin-top: 30px;">
-            <p style="color: #999; font-size: 12px;">
-              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
-            </p>
-          </div>
-        </div>
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #2c3e50;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f0f2f5;
+              }
+              .container {
+                background-color: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                overflow: hidden;
+              }
+              .header {
+                background: linear-gradient(135deg, #4a90e2, #7f53ac);
+                padding: 35px 20px;
+                text-align: center;
+              }
+              .header h1 {
+                color: #ffffff;
+                margin: 0;
+                font-size: 28px;
+                font-weight: 600;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+              }
+              .content {
+                padding: 35px;
+                background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+              }
+              .otp-container {
+                background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                border-radius: 10px;
+                padding: 25px;
+                text-align: center;
+                margin: 25px 0;
+                border: 1px solid #e0e0e0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+              }
+              .otp-code {
+                font-size: 36px;
+                font-weight: bold;
+                background: linear-gradient(135deg, #4a90e2, #7f53ac);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: 8px;
+                margin: 15px 0;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+              }
+              .footer {
+                background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+                padding: 25px;
+                text-align: center;
+                border-top: 1px solid #e0e0e0;
+              }
+              .logo {
+                font-size: 28px;
+                font-weight: bold;
+                background: linear-gradient(135deg, #4a90e2, #7f53ac);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: 12px;
+              }
+              .copyright {
+                color: #6c757d;
+                font-size: 14px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Verify Your Email</h1>
+              </div>
+              <div class="content">
+                <p>Thank you for signing up with KarmaSync! To complete your registration, please use the following OTP to verify your email address:</p>
+                
+                <div class="otp-container">
+                  <div class="otp-code">${otp}</div>
+                </div>
+
+                <p style="color: #6c757d; font-size: 14px;">
+                  This OTP will expire in 5 minutes. If you didn't request this verification, please ignore this email.
+                </p>
+              </div>
+              <div class="footer">
+                <div class="copyright">© ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.</div>
+              </div>
+            </div>
+          </body>
+        </html>
       `
     };
 
@@ -378,7 +528,7 @@ exports.verifyOTP = async (req, res) => {
           </p>
           <div style="text-align: center; margin-top: 30px;">
             <p style="color: #999; font-size: 12px;">
-              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
+              © ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.
             </p>
           </div>
         </div>
@@ -443,7 +593,7 @@ exports.resendOTP = async (req, res) => {
           </p>
           <div style="text-align: center; margin-top: 30px;">
             <p style="color: #999; font-size: 12px;">
-              © ${new Date().getFullYear()} KarmaSync. All rights reserved.
+              © ${new Date().getFullYear()} KarmaSync. Licensed under the MIT License.
             </p>
           </div>
         </div>
