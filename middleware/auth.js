@@ -1,31 +1,42 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
-    console.log('Auth middleware - Headers:', req.headers);
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('Auth Middleware - Headers:', req.headers);
     
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('Auth Middleware - Token:', token ? 'Present' : 'Missing');
+
     if (!token) {
-      console.log('Auth middleware - No token provided');
-      return res.status(401).json({ message: 'No authentication token, access denied' });
+      throw new Error('No authentication token provided');
     }
 
-    console.log('Auth middleware - Token:', token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Auth middleware - Decoded token:', decoded);
+    console.log('Auth Middleware - Decoded Token:', decoded);
+
+    const user = await User.findOne({ _id: decoded.userId });
+    console.log('Auth Middleware - User Found:', user ? 'Yes' : 'No');
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    req.user = user;
+    req.token = token;
     
-    // Set both userId and id for compatibility
-    req.user = {
-      id: decoded.userId,
-      userId: decoded.userId
-    };
-    
-    console.log('Auth middleware - User set in request:', req.user);
+    console.log('Auth Middleware - User attached to request:', {
+      userId: user._id,
+      email: user.email
+    });
+
     next();
   } catch (error) {
-    console.error('Auth middleware - Error:', error);
-    console.error('Auth middleware - Error stack:', error.stack);
-    res.status(401).json({ message: 'Token is invalid' });
+    console.error('Auth Middleware Error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    res.status(401).json({ message: 'Please authenticate' });
   }
 };
 

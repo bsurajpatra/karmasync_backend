@@ -47,15 +47,17 @@ mongoose.connection.on('disconnected', () => {
 
 // Import routes
 console.log('Loading routes...');
-const authRouter = require("./routes/auth");
-const tasksRouter = require("./routes/tasks");
-const projectsRouter = require("./routes/projects");
+const auth = require('./routes/auth');
+const tasks = require('./routes/tasks');
+const projects = require('./routes/projects');
+const todosRoutes = require('./routes/todosRoutes');
 
 // Use routes
 console.log('Registering routes...');
-app.use("/api/auth", authRouter);
-app.use("/api", tasksRouter);
-app.use("/api/projects", projectsRouter);
+app.use('/api/auth', auth);
+app.use('/api', tasks);
+app.use('/api/projects', projects);
+app.use('/api/todos', todosRoutes);
 
 // Log registered routes
 app._router.stack.forEach(function(r){
